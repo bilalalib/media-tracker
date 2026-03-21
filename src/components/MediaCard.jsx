@@ -1,4 +1,4 @@
-export default function MediaCard({ id, title, type, status, imageUrl, isSavedPage, onRemove }) {
+export default function MediaCard({ id, title, type, status, imageUrl, isSavedPage, onRemove, trackingStatus, onStatusChange }) {
   
   const handleSave = () => {
     try {
@@ -15,7 +15,7 @@ export default function MediaCard({ id, title, type, status, imageUrl, isSavedPa
         return;
       }
 
-      const newMangaToSave = { id, title, type, status, imageUrl };
+      const newMangaToSave = { id, title, type, status, imageUrl, trackingStatus: 'Reading' };
       const updatedList = [...existingList, newMangaToSave];
       localStorage.setItem('nexus_tracker_list', JSON.stringify(updatedList));
       
@@ -45,12 +45,25 @@ export default function MediaCard({ id, title, type, status, imageUrl, isSavedPa
         </div>
         
         {isSavedPage ? (
-          <button 
-            onClick={() => onRemove(id)}
-            className="mt-4 w-full bg-zinc-800 hover:bg-red-600 text-white font-semibold py-2 rounded transition"
-          >
-            Remove
-          </button>
+          <div className="mt-4 flex flex-col gap-2">
+            <select 
+              value={trackingStatus || 'Reading'}
+              onChange={(e) => onStatusChange(id, e.target.value)}
+              className="w-full bg-zinc-800 text-sm text-zinc-300 border border-zinc-700 rounded px-2 py-1.5 focus:outline-none focus:border-red-600"
+            >
+              <option value="Reading">Reading</option>
+              <option value="Plan to Read">Plan to Read</option>
+              <option value="Completed">Completed</option>
+              <option value="On Hold">On Hold</option>
+            </select>
+            
+            <button 
+              onClick={() => onRemove(id)}
+              className="w-full bg-zinc-800 hover:bg-red-600 text-white font-semibold py-1.5 rounded transition text-sm"
+            >
+              Remove
+            </button>
+          </div>
         ) : (
           <button 
             onClick={handleSave}
