@@ -6,8 +6,14 @@ export default function MyList() {
 
   useEffect(() => {
     const storedData = localStorage.getItem('nexus_tracker_list')
+    console.log("1. Raw data from browser:", storedData)
+
     if (storedData) {
-      setSavedMedia(JSON.parse(storedData))
+      const parsedData = JSON.parse(storedData)
+      console.log("2. Data converted for React:", parsedData)
+      setSavedMedia(parsedData)
+    } else {
+      console.log("3. Browser says local storage is empty!")
     }
   }, [])
 
@@ -19,6 +25,21 @@ export default function MyList() {
     localStorage.setItem('nexus_tracker_list', JSON.stringify(updatedList))
   }
 
+  const handleStatusChange = (idToUpdate, newStatus) => {
+    console.log("1. Dropdown clicked! Target ID:", idToUpdate, "New Status:", newStatus)
+
+    const updatedList = savedMedia.map((manga) => {
+      if (manga.id == idToUpdate) {
+        console.log("2. Match found! Updating status for:", manga.title)
+        return { ...manga, trackingStatus: newStatus }
+      }
+      return manga
+    })
+    
+    console.log("3. Final list being saved to memory:", updatedList)
+    setSavedMedia(updatedList)
+    localStorage.setItem('nexus_tracker_list', JSON.stringify(updatedList))
+  }
   return (
     <main className="max-w-6xl mx-auto p-6 mt-4">
       <h2 className="text-xl font-semibold mb-6 border-l-4 border-red-600 pl-3">My Tracked Series</h2>
@@ -38,8 +59,10 @@ export default function MyList() {
               type={manga.type}
               status={manga.status}
               imageUrl={manga.imageUrl}
+              trackingStatus={manga.trackingStatus}
               isSavedPage={true}
               onRemove={handleRemoveFromList}
+              onStatusChange={handleStatusChange}
             />
           ))}
         </div>
