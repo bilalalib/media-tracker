@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "../supabase";
 
 export default function MediaCard({
   id,
@@ -18,21 +19,22 @@ export default function MediaCard({
 
   useEffect(() => {
     if (!isSavedPage) {
-      const storedString = localStorage.getItem("nexus_tracker_list");
-      if (storedString) {
-        const existingList = JSON.parse(storedString);
-        const alreadySaved = existingList.some(
-          (item) => String(item.id) === String(id),
-        );
-        setIsTracked(alreadySaved);
-      }
+      const checkTracked = async () => {
+        const { data } = await supabase
+          .from("tracked_manga")
+          .select("id")
+          .eq("id", id);
+        if (data && data.length > 0) {
+          setIsTracked(true);
+        }
+      };
+      checkTracked();
     }
   }, [id, isSavedPage]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     try {
-      const storedString = localStorage.getItem("nexus_tracker_list");
-      let existingList = storedString ? JSON.parse(storedString) : [];
+      setIsTracked(true);
 
       const newMangaToSave = {
         id,
@@ -45,10 +47,15 @@ export default function MediaCard({
         notes: "",
       };
 
-      const updatedList = [...existingList, newMangaToSave];
-      localStorage.setItem("nexus_tracker_list", JSON.stringify(updatedList));
+      const { error } = await supabase
+        .from("tracked_manga")
+        .insert([newMangaToSave]);
 
-      setIsTracked(true);
+      if (error) {
+        console.error("Cloud Save Error:", error);
+        setIsTracked(false);
+        alert("Failed to save to cloud.");
+      }
     } catch (error) {
       console.error("CRASH DURING SAVE:", error);
     }

@@ -20,9 +20,6 @@ export default function Discover() {
 
       {searchQuery.trim() !== "" ? (
         <>
-          <h2 className="text-xl font-semibold mb-6 border-l-4 border-red-600 pl-3">
-            Search Results for "{searchQuery}"
-          </h2>
           <MediaGrid searchQuery={searchQuery} />
         </>
       ) : (
