@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import MediaCard from './MediaCard'
 import { supabase } from '../supabase'
 
@@ -7,21 +8,26 @@ export default function MyList() {
   const [activeFilter, setActiveFilter] = useState('All')
   const [sortBy, setSortBy] = useState('Default')
   const [isLoading, setIsLoading] = useState(true)
-
+  const [session, setSession] = useState(null)
+  
   useEffect(() => {
-    const fetchMyList = async () => {
-      const { data, error } = await supabase.from('tracked_manga').select('*')
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
       
-      if (error) {
-        console.error("Error fetching from Supabase:", error)
+      if (session) {
+        fetchMyList()
       } else {
-        setSavedMedia(data || [])
+        setIsLoading(false)
       }
-      setIsLoading(false)
-    }
-    
-    fetchMyList()
+    })
   }, [])
+
+  const fetchMyList = async () => {
+    const { data, error } = await supabase.from('tracked_manga').select('*')
+    if (error) console.error("Error fetching:", error)
+    else setSavedMedia(data || [])
+    setIsLoading(false)
+  }
 
   const handleRemoveFromList = async (idToRemove) => {
     setSavedMedia((prev) => prev.filter((manga) => String(manga.id) !== String(idToRemove)))
@@ -55,6 +61,18 @@ export default function MyList() {
 
   const filterOptions = ['All', 'Reading', 'Completed', 'Plan to Read', 'On Hold']
 
+  if (!isLoading && !session) {
+    return (
+      <main className="max-w-xl mx-auto px-6 mt-32 text-center">
+        <h2 className="text-3xl font-bold text-white mb-4">You are not logged in</h2>
+        <p className="text-zinc-400 mb-8">Please sign in or create an account to start tracking your manga collection.</p>
+        <Link to="/account" className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg transition duration-200">
+          Go to Account Page
+        </Link>
+      </main>
+    )
+  }
+  
   return (
     <main className="max-w-6xl mx-auto p-6 mt-4 mb-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">

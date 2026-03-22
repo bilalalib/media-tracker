@@ -22,7 +22,11 @@ export default function Navbar() {
               </Link>
             </li>
             <li className="hover:text-white cursor-pointer transition">
-              Account
+              <Link
+                to="/account"
+                className="text-zinc-400 hover:text-white transition">
+                Account
+              </Link>
             </li>
           </ul>
         </nav>
