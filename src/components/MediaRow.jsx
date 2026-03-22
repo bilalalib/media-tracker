@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import DiscoverCard from "./DiscoverCard";
+import { Link } from 'react-router-dom'
 
 export default function MediaRow({ title, endpoint }) {
   const [media, setMedia] = useState([]);
@@ -40,9 +41,13 @@ export default function MediaRow({ title, endpoint }) {
         <h2 className="text-sm font-bold text-zinc-300 tracking-wider uppercase">
           {title}
         </h2>
-        <button className="text-xs font-semibold text-zinc-500 hover:text-zinc-300 transition">
+        <Link 
+          to={`/view/${title.toLowerCase().replace(/\s+/g, '-')}`} 
+          state={{ title: title, endpoint: endpoint }} 
+          className="text-xs font-semibold text-zinc-500 hover:text-zinc-300 transition"
+        >
           View All
-        </button>
+        </Link>
       </div>
 
       <div className="flex overflow-x-auto gap-4 pb-4 snap-x hide-scrollbar">
