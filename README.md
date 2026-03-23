@@ -1,16 +1,45 @@
-# React + Vite
+# Media Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack web application designed to discover and track manga and manhwa. Built with a modern, responsive UI, secure user authentication, and a real-time cloud database.
 
-Currently, two official plugins are available:
+**Live Demo:** https://media-tracker-rust.vercel.app
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+* **Discover Dashboard:** Browse dynamically generated rows of Trending Now, All-Time Popular, and a top 100 list.
+* **Search & Add:** Instantly search the global database and add series to your personal list with a single click.
+* **Cloud Synchronization:** Your tracked media is saved to a PostgreSQL cloud database, accessible from any device.
+* **Secure Authentication:** User sign-ups and logins handled via secure, encrypted tokens with Row Level Security (RLS) ensuring absolute data privacy.
+* **Responsive Design:** Fully optimized for both desktop and mobile viewing with a premium dark-mode aesthetic.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+* **Frontend:** React (Vite), JavaScript, Tailwind CSS, React Router
+* **Backend / Database:** Supabase (PostgreSQL, Authentication)
+* **External API:** Jikan API (Unofficial MyAnimeList API)
+* **Deployment:** Vercel
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Future Roadmap
+
+While currently focused on manga and manhwa, the architecture is designed to scale into a universal media tracker. Future updates will include integrations for tracking movies and TV series using the TMDB API.
+
+## Running Locally
+
+To run this project on your local machine:
+
+1. Clone the repository:
+
+   git clone https://github.com/bilalalib/media-tracker.git
+
+2. Install dependencies:
+    
+    npm install
+
+3. Create a .env.local file in the root directory and add your Supabase keys:
+
+    VITE_SUPABASE_URL=your_supabase_project_url
+    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+4. Start the development server:
+
+    npm run dev
