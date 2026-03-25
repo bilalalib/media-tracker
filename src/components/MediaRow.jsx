@@ -1,7 +1,13 @@
 import DiscoverCard from "./DiscoverCard";
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 
-export default function MediaRow({ title, endpoint, items = [], category = 'manga' }) {
+export default function MediaRow({
+  title,
+  endpoint,
+  items = [],
+  category = "manga",
+}) {
+  // Skip rendering empty rows
   if (!items || items.length === 0) return null;
 
   return (
@@ -11,9 +17,10 @@ export default function MediaRow({ title, endpoint, items = [], category = 'mang
           {title}
         </h2>
         {endpoint && (
-          <Link 
-            to={`/view/${title.toLowerCase().replace(/\s+/g, '-')}`} 
-            state={{ title: title, endpoint: endpoint }} 
+          <Link
+            // Build a readable slug for the view-all route
+            to={`/view/${title.toLowerCase().replace(/\s+/g, "-")}`}
+            state={{ title: title, endpoint: endpoint }}
             className="text-xs font-semibold text-zinc-500 hover:text-cyan-400 transition"
           >
             View All

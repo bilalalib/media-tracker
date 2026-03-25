@@ -7,8 +7,10 @@ export default function DiscoverCard({
   imageUrl,
   category = "manga",
 }) {
+  // UI state for whether this item is already saved
   const [isTracked, setIsTracked] = useState(false);
 
+  // Resolve table/ID mapping by content type
   const getTableInfo = () => {
     if (category === "movie")
       return { name: "tracked_movies", idColumn: "tmdb_id" };
@@ -18,6 +20,7 @@ export default function DiscoverCard({
   };
 
   useEffect(() => {
+    // On card load/change, check if item already exists in DB
     const checkTracked = async () => {
       const table = getTableInfo();
 
@@ -34,6 +37,7 @@ export default function DiscoverCard({
 
   const handleSave = async () => {
     try {
+      // Optimistic UI: show tracked state immediately
       setIsTracked(true);
       const table = getTableInfo();
 
@@ -43,6 +47,7 @@ export default function DiscoverCard({
 
       let payload;
 
+      // Manga schema differs from movie/show schema
       if (category === "manga") {
         payload = {
           id,

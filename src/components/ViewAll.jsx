@@ -4,6 +4,7 @@ import MediaCard from "./MediaCard";
 
 export default function ViewAll() {
   const location = useLocation();
+  // Values passed from the Discover row "View All" link
   const title = location.state?.title;
   const endpoint = location.state?.endpoint;
 
@@ -12,11 +13,13 @@ export default function ViewAll() {
 
   useEffect(() => {
     const fetchFullList = async () => {
+      // Guard route access when no state/endpoint is available
       if (!endpoint) return;
 
       try {
         let response = await fetch(endpoint);
 
+        // Basic retry for temporary Jikan rate limiting
         if (response.status === 429) {
           await new Promise((resolve) => setTimeout(resolve, 1500));
           response = await fetch(endpoint);
@@ -34,6 +37,7 @@ export default function ViewAll() {
     fetchFullList();
   }, [endpoint]);
 
+  // Fallback UI if this page is opened directly without route state
   if (!endpoint) {
     return (
       <div className="text-center mt-32 text-zinc-500">

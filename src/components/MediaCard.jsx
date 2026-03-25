@@ -12,23 +12,27 @@ export default function MediaCard({
   onRemove,
   onUpdate,
 }) {
+  // Local UI state for notes accordion
   const [showNotes, setShowNotes] = useState(false);
 
-  // Dynamic colors and text based on the category!
-  const themeColor = category === 'manga' ? 'red' : category === 'movie' ? 'cyan' : 'purple';
-  
-  // Adapt "Reading" vs "Watching"
-  const activeVerb = category === 'manga' ? 'Reading' : 'Watching';
-  const planVerb = category === 'manga' ? 'Plan to Read' : 'Plan to Watch';
+  // Category-driven theme color
+  const themeColor =
+    category === "manga" ? "red" : category === "movie" ? "cyan" : "purple";
+
+  // Adjust action labels for manga vs screen media
+  const activeVerb = category === "manga" ? "Reading" : "Watching";
+  const planVerb = category === "manga" ? "Plan to Read" : "Plan to Watch";
 
   return (
-    <div className={`bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 hover:border-${themeColor}-500/50 transition group flex flex-col shadow-md h-full`}>
+    <div
+      className={`bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 hover:border-${themeColor}-500/50 transition group flex flex-col shadow-md h-full`}
+    >
       <div className="h-56 sm:h-64 bg-zinc-800 relative flex-shrink-0">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={title}
-            referrerPolicy="no-referrer" // The MAL fix!
+            referrerPolicy="no-referrer" // Helps avoid blocked image referrers on some sources
             className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
           />
         ) : (
