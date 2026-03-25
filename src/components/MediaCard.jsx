@@ -1,159 +1,102 @@
-import { useState, useEffect } from "react";
-import { supabase } from "../supabase";
+import { useState } from "react";
 
 export default function MediaCard({
   id,
   title,
   type,
-  status,
   imageUrl,
-  isSavedPage,
-  onRemove,
   trackingStatus,
   rating,
   notes,
+  category, // 'manga', 'movie', or 'show'
+  onRemove,
   onUpdate,
 }) {
   const [showNotes, setShowNotes] = useState(false);
-  const [isTracked, setIsTracked] = useState(false);
 
-  useEffect(() => {
-    if (!isSavedPage) {
-      const checkTracked = async () => {
-        const { data } = await supabase
-          .from("tracked_manga")
-          .select("id")
-          .eq("id", id);
-        if (data && data.length > 0) {
-          setIsTracked(true);
-        }
-      };
-      checkTracked();
-    }
-  }, [id, isSavedPage]);
-
-  const handleSave = async () => {
-    try {
-      setIsTracked(true);
-
-      const newMangaToSave = {
-        id,
-        title,
-        type,
-        status,
-        imageUrl,
-        trackingStatus: "Reading",
-        rating: 0,
-        notes: "",
-      };
-
-      const { error } = await supabase
-        .from("tracked_manga")
-        .insert([newMangaToSave]);
-
-      if (error) {
-        console.error("Cloud Save Error:", error);
-        setIsTracked(false);
-        alert("Failed to save to cloud.");
-      }
-    } catch (error) {
-      console.error("CRASH DURING SAVE:", error);
-    }
-  };
+  // Dynamic colors and text based on the category!
+  const themeColor = category === 'manga' ? 'red' : category === 'movie' ? 'cyan' : 'purple';
+  
+  // Adapt "Reading" vs "Watching"
+  const activeVerb = category === 'manga' ? 'Reading' : 'Watching';
+  const planVerb = category === 'manga' ? 'Plan to Read' : 'Plan to Watch';
 
   return (
-    <div className="bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 hover:border-zinc-600 transition group flex flex-col shadow-md h-full">
-      <div className="h-64 bg-zinc-800 relative cursor-pointer flex-shrink-0">
+    <div className={`bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 hover:border-${themeColor}-500/50 transition group flex flex-col shadow-md h-full`}>
+      <div className="h-56 sm:h-64 bg-zinc-800 relative flex-shrink-0">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={title}
+            referrerPolicy="no-referrer" // The MAL fix!
             className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-zinc-600 font-bold text-xl">
+          <div className="absolute inset-0 flex items-center justify-center text-zinc-600 font-bold text-sm">
             No Cover
           </div>
         )}
       </div>
 
-      <div className="p-4 flex flex-col flex-grow">
+      <div className="p-3 sm:p-4 flex flex-col flex-grow">
         <div className="mb-3">
-          <h3 className="font-bold text-lg truncate" title={title}>
+          <h3 className="font-bold text-sm sm:text-base truncate" title={title}>
             {title}
           </h3>
-          <p className="text-sm text-zinc-400 mt-1">
-            {type} • {status}
+          <p className="text-xs text-zinc-400 mt-1 uppercase tracking-wider font-semibold">
+            {type}
           </p>
         </div>
 
         <div className="flex-grow flex flex-col justify-end gap-2">
-          {isSavedPage ? (
-            <>
-              <select
-                value={trackingStatus || "Reading"}
-                onChange={(e) => onUpdate(id, "trackingStatus", e.target.value)}
-                className="w-full bg-zinc-800 text-sm text-zinc-300 border border-zinc-700 rounded px-2 py-1.5 focus:outline-none focus:border-red-600"
-              >
-                <option value="Reading">Reading</option>
-                <option value="Plan to Read">Plan to Read</option>
-                <option value="Completed">Completed</option>
-                <option value="On Hold">On Hold</option>
-              </select>
+          <select
+            value={trackingStatus || activeVerb}
+            onChange={(e) => onUpdate(id, "trackingStatus", e.target.value)}
+            className={`w-full bg-zinc-800 text-xs sm:text-sm text-zinc-300 border border-zinc-700 rounded px-2 py-1.5 focus:outline-none focus:border-${themeColor}-500`}
+          >
+            <option value={activeVerb}>{activeVerb}</option>
+            <option value={planVerb}>{planVerb}</option>
+            <option value="Completed">Completed</option>
+            <option value="Dropped">Dropped</option>
+          </select>
 
-              <select
-                value={rating || 0}
-                onChange={(e) => onUpdate(id, "rating", Number(e.target.value))}
-                className="w-full bg-zinc-800 text-sm text-zinc-300 border border-zinc-700 rounded px-2 py-1.5 focus:outline-none focus:border-red-600"
-              >
-                <option value={0}>Unrated</option>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                  <option key={num} value={num}>
-                    ⭐ {num} / 10
-                  </option>
-                ))}
-              </select>
+          <select
+            value={rating || 0}
+            onChange={(e) => onUpdate(id, "rating", Number(e.target.value))}
+            className={`w-full bg-zinc-800 text-xs sm:text-sm text-zinc-300 border border-zinc-700 rounded px-2 py-1.5 focus:outline-none focus:border-${themeColor}-500`}
+          >
+            <option value={0}>Unrated</option>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+              <option key={num} value={num}>
+                ⭐ {num} / 10
+              </option>
+            ))}
+          </select>
 
-              <button
-                onClick={() => setShowNotes(!showNotes)}
-                className="w-full bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 text-sm py-1.5 rounded border border-zinc-700 transition flex justify-between px-3"
-              >
-                <span>📝 {notes ? "Edit Notes" : "Add Notes"}</span>
-                <span>{showNotes ? "▲" : "▼"}</span>
-              </button>
+          <button
+            onClick={() => setShowNotes(!showNotes)}
+            className="w-full bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400 text-xs py-1.5 rounded border border-zinc-700 transition flex justify-between px-3"
+          >
+            <span>📝 {notes ? "Edit Notes" : "Add Notes"}</span>
+            <span>{showNotes ? "▲" : "▼"}</span>
+          </button>
 
-              {showNotes && (
-                <textarea
-                  value={notes || ""}
-                  onChange={(e) => onUpdate(id, "notes", e.target.value)}
-                  placeholder="Type your thoughts here..."
-                  className="w-full bg-zinc-950 text-sm text-zinc-300 border border-zinc-700 rounded px-2 py-2 h-24 resize-none focus:outline-none focus:border-red-600 mt-1"
-                  autoFocus
-                />
-              )}
-
-              <button
-                onClick={() => onRemove(id)}
-                className="w-full bg-zinc-800 hover:bg-red-600 text-white font-semibold py-1.5 rounded transition text-sm mt-2"
-              >
-                Remove
-              </button>
-            </>
-          ) : isTracked ? (
-            <button
-              disabled
-              className="mt-4 w-full bg-zinc-800 text-zinc-500 font-semibold py-2 rounded cursor-not-allowed border border-zinc-700"
-            >
-              ✓ In Your List
-            </button>
-          ) : (
-            <button
-              onClick={handleSave}
-              className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded transition"
-            >
-              Track Series
-            </button>
+          {showNotes && (
+            <textarea
+              value={notes || ""}
+              onChange={(e) => onUpdate(id, "notes", e.target.value)}
+              placeholder="Your thoughts..."
+              className={`w-full bg-zinc-950 text-xs text-zinc-300 border border-zinc-700 rounded px-2 py-2 h-20 resize-none focus:outline-none focus:border-${themeColor}-500 mt-1`}
+              autoFocus
+            />
           )}
+
+          <button
+            onClick={() => onRemove(id)}
+            className="w-full bg-zinc-800 hover:bg-red-600 text-white font-semibold py-1.5 rounded transition text-xs mt-1"
+          >
+            Remove
+          </button>
         </div>
       </div>
     </div>

@@ -1,33 +1,73 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../supabase';
+import { useState, useEffect } from "react";
+import { supabase } from "../supabase";
 
-export default function DiscoverCard({ id, title, imageUrl }) {
+export default function DiscoverCard({
+  id,
+  title,
+  imageUrl,
+  category = "manga",
+}) {
   const [isTracked, setIsTracked] = useState(false);
+
+  const getTableInfo = () => {
+    if (category === "movie")
+      return { name: "tracked_movies", idColumn: "tmdb_id" };
+    if (category === "show")
+      return { name: "tracked_shows", idColumn: "tmdb_id" };
+    return { name: "tracked_manga", idColumn: "id" };
+  };
 
   useEffect(() => {
     const checkTracked = async () => {
-      const { data } = await supabase.from('tracked_manga').select('id').eq('id', id);
+      const table = getTableInfo();
+
+      const { data } = await supabase
+        .from(table.name)
+        .select(table.idColumn)
+        .eq(table.idColumn, id);
       if (data && data.length > 0) {
         setIsTracked(true);
       }
     };
     checkTracked();
-  }, [id]);
+  }, [id, category]);
 
   const handleSave = async () => {
     try {
-      setIsTracked(true); 
+      setIsTracked(true);
+      const table = getTableInfo();
 
-      const newManga = { 
-        id, title, type: 'Manga', status: 'Unknown', imageUrl, 
-        trackingStatus: 'Reading', rating: 0, notes: '' 
-      };
-      
-      const { error } = await supabase.from('tracked_manga').insert([newManga]);
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      let payload;
+
+      if (category === "manga") {
+        payload = {
+          id,
+          title,
+          type: "Manga",
+          status: "Unknown",
+          imageUrl,
+          trackingStatus: "Reading",
+          rating: 0,
+          notes: "",
+        };
+      } else {
+        payload = {
+          user_id: user?.id,
+          tmdb_id: id,
+          title: title,
+          image_url: imageUrl,
+        };
+      }
+
+      const { error } = await supabase.from(table.name).insert([payload]);
+
       if (error) {
         console.error("Supabase Save Error:", error);
-        setIsTracked(false); 
+        setIsTracked(false);
         alert("Failed to save to cloud.");
       }
     } catch (err) {
@@ -36,30 +76,40 @@ export default function DiscoverCard({ id, title, imageUrl }) {
   };
 
   return (
-    <div className="flex flex-col gap-2 group w-36 md:w-44 flex-shrink-0 cursor-pointer snap-start">
-      <div className="relative h-56 md:h-64 rounded-lg overflow-hidden shadow-md">
+    <div className="flex flex-col gap-2 group w-32 sm:w-40 md:w-48 flex-shrink-0 cursor-pointer snap-start transition-transform duration-300 hover:scale-105">
+      <div className="relative h-48 sm:h-60 md:h-72 rounded-lg overflow-hidden shadow-md bg-transparent">
         {imageUrl ? (
-          <img src={imageUrl} alt={title} className="w-full h-full object-cover transition duration-300 group-hover:scale-105 group-hover:brightness-50" />
+          <img
+            src={imageUrl}
+            alt={title}
+            className="w-full h-full object-cover transition duration-300 group-hover:brightness-50"
+            referrerPolicy="no-referrer"
+          />
         ) : (
-          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-zinc-500">No Image</div>
+          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-zinc-500 text-xs text-center p-2">
+            No Image
+          </div>
         )}
-        
+
         <div className="absolute inset-0 flex items-center justify-center opacity-100 bg-black/30 md:bg-transparent md:opacity-0 group-hover:opacity-100 md:group-hover:bg-black/40 transition-all duration-300 pointer-events-none">
           {isTracked ? (
-            <span className="bg-zinc-900/90 text-zinc-300 px-3 py-1.5 rounded text-sm font-semibold border border-zinc-700 pointer-events-auto shadow-lg">
+            <span className="bg-zinc-900/90 text-cyan-400 px-3 py-1.5 rounded text-xs sm:text-sm font-semibold border border-zinc-700 pointer-events-auto shadow-lg">
               ✓ Tracked
             </span>
           ) : (
-            <button 
-              onClick={handleSave} 
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded text-sm font-bold shadow-lg pointer-events-auto transform hover:scale-105 transition"
+            <button
+              onClick={handleSave}
+              className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-1.5 rounded text-xs sm:text-sm font-bold shadow-lg pointer-events-auto transform hover:scale-105 transition"
             >
               + Track
             </button>
           )}
         </div>
       </div>
-      <h3 className="text-sm font-medium text-zinc-400 truncate transition group-hover:text-zinc-100" title={title}>
+      <h3
+        className="text-xs sm:text-sm font-medium text-zinc-400 truncate transition group-hover:text-zinc-100"
+        title={title}
+      >
         {title}
       </h3>
     </div>

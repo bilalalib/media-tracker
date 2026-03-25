@@ -1,62 +1,34 @@
-import { useState, useEffect } from "react";
 import DiscoverCard from "./DiscoverCard";
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom';
 
-export default function MediaRow({ title, endpoint }) {
-  const [media, setMedia] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        let response = await fetch(endpoint)
-        
-        if (response.status === 429) {
-          await new Promise(resolve => setTimeout(resolve, 1000))
-          response = await fetch(endpoint)
-        }
-
-        const data = await response.json()
-        if (data.data) {
-          setMedia(data.data.slice(0, 15))
-        }
-        setIsLoading(false)
-      } catch (error) {
-        console.error(`Error fetching ${title}:`, error)
-        setIsLoading(false)
-      }
-    }
-    fetchData()
-  }, [endpoint, title])
-
-  if (isLoading) {
-    return (
-      <div className="mb-10 h-72 animate-pulse bg-zinc-900/30 rounded-xl"></div>
-    );
-  }
+export default function MediaRow({ title, endpoint, items = [], category = 'manga' }) {
+  if (!items || items.length === 0) return null;
 
   return (
     <div className="mb-10">
       <div className="flex justify-between items-end mb-4 px-1">
-        <h2 className="text-sm font-bold text-zinc-300 tracking-wider uppercase">
+        <h2 className="text-xl md:text-2xl font-bold text-zinc-100 tracking-wide uppercase">
           {title}
         </h2>
-        <Link 
-          to={`/view/${title.toLowerCase().replace(/\s+/g, '-')}`} 
-          state={{ title: title, endpoint: endpoint }} 
-          className="text-xs font-semibold text-zinc-500 hover:text-zinc-300 transition"
-        >
-          View All
-        </Link>
+        {endpoint && (
+          <Link 
+            to={`/view/${title.toLowerCase().replace(/\s+/g, '-')}`} 
+            state={{ title: title, endpoint: endpoint }} 
+            className="text-xs font-semibold text-zinc-500 hover:text-cyan-400 transition"
+          >
+            View All
+          </Link>
+        )}
       </div>
 
-      <div className="flex overflow-x-auto gap-4 pb-4 snap-x hide-scrollbar">
-        {media.map((manga) => (
+      <div className="flex overflow-x-auto gap-4 pb-4 snap-x [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        {items.map((item) => (
           <DiscoverCard
-            key={manga.mal_id}
-            id={manga.mal_id}
-            title={manga.title}
-            imageUrl={manga.images?.webp?.image_url}
+            key={item.id}
+            id={item.id}
+            title={item.title}
+            imageUrl={item.imageUrl}
+            category={category}
           />
         ))}
       </div>
