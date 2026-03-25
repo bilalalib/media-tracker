@@ -15,6 +15,11 @@ export default function Navbar() {
           <ul className="flex space-x-6 text-sm font-medium text-zinc-400">
             <li>
               <Link to="/" className="hover:text-white transition">
+                Dashboard
+              </Link>
+            </li>
+            <li>
+              <Link to="/manga" className="hover:text-white transition">
                 Discover
               </Link>
             </li>

@@ -8,6 +8,7 @@ import MyList from "./components/MyList";
 import ViewAll from "./components/ViewAll";
 import Account from "./components/Account";
 import DiscoverBooks from './components/DiscoverBooks'
+import Home from "./components/Home";
 
 function App() {
   return (
@@ -17,7 +18,7 @@ function App() {
       {/* App routes */}
       <Routes>
         {/* Default landing route */}
-        <Route path="/" element={<Navigate to="/manga" replace />} />
+        <Route path="/" element={<Home />} />
         <Route path="/manga" element={<DiscoverManga />} />
         <Route path="/movies" element={<DiscoverMovies />} />
         <Route path="/shows" element={<DiscoverShows />} />
