@@ -7,6 +7,7 @@ import DiscoverShows from "./components/DiscoverShows";
 import MyList from "./components/MyList";
 import ViewAll from "./components/ViewAll";
 import Account from "./components/Account";
+import DiscoverBooks from './components/DiscoverBooks'
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route path="/manga" element={<DiscoverManga />} />
         <Route path="/movies" element={<DiscoverMovies />} />
         <Route path="/shows" element={<DiscoverShows />} />
+        <Route path="/books" element={<DiscoverBooks />} />
         <Route path="/mylist" element={<MyList />} />
         <Route path="/mylist/:tab" element={<MyList />} />
         <Route path="/view/:category" element={<ViewAll />} />

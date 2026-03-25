@@ -7,7 +7,7 @@ export default function Navbar() {
         {/* Brand link */}
         <Link to="/">
           <h1 className="text-2xl font-bold text-red-600 tracking-wider">
-            MY MANGA TRACKER
+            MY MEDIA TRACKER
           </h1>
         </Link>
         {/* Primary navigation */}

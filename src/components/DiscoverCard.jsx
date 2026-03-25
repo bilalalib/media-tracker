@@ -16,6 +16,8 @@ export default function DiscoverCard({
       return { name: "tracked_movies", idColumn: "tmdb_id" };
     if (category === "show")
       return { name: "tracked_shows", idColumn: "tmdb_id" };
+    if (category === "book")
+      return { name: "tracked_books", idColumn: "book_id" };
     return { name: "tracked_manga", idColumn: "id" };
   };
 
@@ -59,6 +61,13 @@ export default function DiscoverCard({
           rating: 0,
           notes: "",
         };
+      } else if (category === "book") {
+        payload = {
+          user_id: user?.id,
+          book_id: id,
+          title: title,
+          image_url: imageUrl,
+        };
       } else {
         payload = {
           user_id: user?.id,
@@ -67,7 +76,6 @@ export default function DiscoverCard({
           image_url: imageUrl,
         };
       }
-
       const { error } = await supabase.from(table.name).insert([payload]);
 
       if (error) {

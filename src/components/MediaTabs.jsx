@@ -6,6 +6,7 @@ export default function MediaTabs() {
     { name: "Manga & Manhwa", path: "/manga" },
     { name: "Movies", path: "/movies" },
     { name: "TV Shows", path: "/shows" },
+    { name: "Books", path: "/books" },
   ];
 
   return (

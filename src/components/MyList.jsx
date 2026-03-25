@@ -41,13 +41,20 @@ export default function MyList() {
         return [];
       }
       return data.map((item) => ({
-        id: itemCategory === "manga" ? item.id : item.tmdb_id,
+        id:
+          itemCategory === "manga"
+            ? item.id
+            : itemCategory === "book"
+              ? item.book_id
+              : item.tmdb_id,
         title: item.title,
         imageUrl: item.imageUrl || item.image_url,
         trackingStatus:
           item.trackingStatus ||
           item.tracking_status ||
-          (itemCategory === "manga" ? "Reading" : "Watching"),
+          (itemCategory === "manga" || itemCategory === "book"
+            ? "Reading"
+            : "Watching"),
         rating: item.rating || 0,
         notes: item.notes || "",
         type:
@@ -63,13 +70,14 @@ export default function MyList() {
 
     if (currentTab === "all") {
       // Load all categories in parallel
-      const [mangas, movies, shows] = await Promise.all([
+      const [mangas, movies, shows, books] = await Promise.all([
         fetchTable("tracked_manga", "manga"),
         fetchTable("tracked_movies", "movie"),
         fetchTable("tracked_shows", "show"),
+        fetchTable("tracked_books", "book"),
       ]);
       // Merge into one collection
-      setSavedMedia([...mangas, ...movies, ...shows]);
+      setSavedMedia([...mangas, ...movies, ...shows, ...books]);
     } else {
       // Load only the selected category
       let tableName = "tracked_manga";
@@ -82,7 +90,10 @@ export default function MyList() {
         tableName = "tracked_shows";
         itemCategory = "show";
       }
-
+      if (currentTab === "books") {
+        tableName = "tracked_books";
+        itemCategory = "book";
+      }
       const data = await fetchTable(tableName, itemCategory);
       setSavedMedia(data);
     }
@@ -120,6 +131,10 @@ export default function MyList() {
       tableName = "tracked_shows";
       idColumn = "tmdb_id";
     }
+    if (itemToDelete.category === "book") {
+      tableName = "tracked_books";
+      idColumn = "book_id";
+    }
 
     const { error } = await supabase
       .from(tableName)
@@ -154,6 +169,10 @@ export default function MyList() {
       tableName = "tracked_shows";
       idColumn = "tmdb_id";
     }
+    if (itemToUpdate.category === "book") {
+      tableName = "tracked_books";
+      idColumn = "book_id";
+    }
     if (field === "trackingStatus" && itemToUpdate.category !== "manga")
       dbField = "tracking_status";
 
@@ -170,9 +189,13 @@ export default function MyList() {
       ? ["All", "In Progress", "Completed", "Planned", "Dropped"]
       : [
           "All",
-          activeTab === "manga" ? "Reading" : "Watching",
+          activeTab === "manga" || activeTab === "books"
+            ? "Reading"
+            : "Watching",
           "Completed",
-          activeTab === "manga" ? "Plan to Read" : "Plan to Watch",
+          activeTab === "manga" || activeTab === "books"
+            ? "Plan to Read"
+            : "Plan to Watch",
           "Dropped",
         ];
 
@@ -256,11 +279,27 @@ export default function MyList() {
         >
           TV Shows
         </button>
+        <button
+          onClick={() => handleTabSwitch("books")}
+          className={`px-4 sm:px-6 py-2 rounded-full font-bold transition-colors text-sm sm:text-base ${activeTab === "books" ? "bg-emerald-600 text-white" : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800"}`}
+        >
+          Books
+        </button>
       </div>
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <h2
-          className={`text-xl font-semibold border-l-4 pl-3 ${activeTab === "all" ? "border-zinc-100" : activeTab === "manga" ? "border-red-600" : activeTab === "movies" ? "border-cyan-600" : "border-purple-600"}`}
+          className={`text-xl font-semibold border-l-4 pl-3 ${
+            activeTab === "all"
+              ? "border-zinc-100"
+              : activeTab === "manga"
+                ? "border-red-600"
+                : activeTab === "movies"
+                  ? "border-cyan-600"
+                  : activeTab === "shows"
+                    ? "border-purple-600"
+                    : "border-emerald-600"
+          }`}
         >
           My Tracked{" "}
           {activeTab === "all"
@@ -269,7 +308,9 @@ export default function MyList() {
               ? "Manga"
               : activeTab === "movies"
                 ? "Movies"
-                : "Shows"}
+                : activeTab === "shows"
+                  ? "Shows"
+                  : "Books"}
         </h2>
 
         <div className="flex flex-col gap-3">
@@ -286,7 +327,9 @@ export default function MyList() {
                         ? "bg-red-600 border-red-600 text-white"
                         : activeTab === "movies"
                           ? "bg-cyan-600 border-cyan-600 text-white"
-                          : "bg-purple-600 border-purple-600 text-white"
+                          : activeTab === "shows"
+                            ? "bg-purple-600 border-purple-600 text-white"
+                            : "bg-emerald-600 border-emerald-600 text-white"
                     : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
                 }`}
               >

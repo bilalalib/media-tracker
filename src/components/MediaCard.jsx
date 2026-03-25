@@ -8,7 +8,7 @@ export default function MediaCard({
   trackingStatus,
   rating,
   notes,
-  category, // 'manga', 'movie', or 'show'
+  category, // 'manga', 'book', 'movie', or 'show'
   onRemove,
   onUpdate,
 }) {
@@ -17,11 +17,21 @@ export default function MediaCard({
 
   // Category-driven theme color
   const themeColor =
-    category === "manga" ? "red" : category === "movie" ? "cyan" : "purple";
+    category === "manga"
+      ? "red"
+      : category === "book"
+        ? "emerald"
+        : category === "movie"
+          ? "cyan"
+          : "purple";
 
   // Adjust action labels for manga vs screen media
-  const activeVerb = category === "manga" ? "Reading" : "Watching";
-  const planVerb = category === "manga" ? "Plan to Read" : "Plan to Watch";
+  const activeVerb =
+    category === "manga" || category === "book" ? "Reading" : "Watching";
+  const planVerb =
+    category === "manga" || category === "book"
+      ? "Plan to Read"
+      : "Plan to Watch";
 
   return (
     <div

@@ -78,7 +78,7 @@ export default function DiscoverManga() {
     setLoading(true);
     try {
       const data = await fetchJikan(
-        `https://api.jikan.moe/v4/manga?q=${searchQuery}&order_by=popularity&sort=desc`,
+        `https://api.jikan.moe/v4/manga?q=${searchQuery}`,
       );
       setSearchResults(formatData(data));
       setIsSearching(true);
