@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import MediaTabs from "./components/MediaTabs";
 import DiscoverManga from "./components/DiscoverManga";
@@ -11,10 +11,13 @@ import DiscoverBooks from './components/DiscoverBooks'
 import Home from "./components/Home";
 
 function App() {
+  const location = useLocation();
+  const discoverPaths = ['/manga', '/movies', '/shows', '/books'];
+  const showTabs = discoverPaths.includes(location.pathname);
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
       <Navbar />
-      <MediaTabs />
+      {showTabs && <MediaTabs />}
       {/* App routes */}
       <Routes>
         {/* Default landing route */}

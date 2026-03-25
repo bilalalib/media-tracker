@@ -2,39 +2,26 @@ import { Link } from "react-router-dom";
 
 export default function Navbar() {
   return (
-    <header className="border-b border-zinc-800 bg-zinc-900 p-4 shadow-sm">
-      <div className="max-w-6xl mx-auto flex justify-between items-center">
-        {/* Brand link */}
+    <header className="border-b border-zinc-800 bg-zinc-900 p-3 sm:p-4 shadow-sm print:hidden">
+      <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
         <Link to="/">
-          <h1 className="text-2xl font-bold text-red-600 tracking-wider">
+          <h1 className="text-xl sm:text-2xl font-bold text-red-600 tracking-wider text-center">
             MY MEDIA TRACKER
           </h1>
         </Link>
-        {/* Primary navigation */}
         <nav>
-          <ul className="flex space-x-6 text-sm font-medium text-zinc-400">
+          <ul className="flex flex-wrap justify-center gap-4 sm:gap-6 text-xs sm:text-sm font-medium text-zinc-400">
             <li>
-              <Link to="/" className="hover:text-white transition">
-                Dashboard
-              </Link>
+              <Link to="/" className="hover:text-white transition">Dashboard</Link>
             </li>
             <li>
-              <Link to="/manga" className="hover:text-white transition">
-                Discover
-              </Link>
+              <Link to="/manga" className="hover:text-white transition">Discover</Link>
             </li>
             <li>
-              <Link to="/mylist" className="hover:text-white transition">
-                My List
-              </Link>
+              <Link to="/mylist" className="hover:text-white transition">My List</Link>
             </li>
             <li className="hover:text-white cursor-pointer transition">
-              <Link
-                to="/account"
-                className="text-zinc-400 hover:text-white transition"
-              >
-                Account
-              </Link>
+              <Link to="/account" className="text-zinc-400 hover:text-white transition">Account</Link>
             </li>
           </ul>
         </nav>

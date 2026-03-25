@@ -52,6 +52,7 @@ export default function DiscoverCard({
       // Manga schema differs from movie/show schema
       if (category === "manga") {
         payload = {
+          user_id: user?.id,
           id,
           title,
           type: "Manga",
