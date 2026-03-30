@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import DiscoverCard from './DiscoverCard';
+import DiscoverCard from "./DiscoverCard";
 
 export default function ViewAll() {
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const title = location.state?.title;
   const endpoint = location.state?.endpoint;
   const category = location.state?.category || "manga";
@@ -18,7 +18,14 @@ export default function ViewAll() {
   const [hasMore, setHasMore] = useState(true);
 
   // Dynamic theme colors for the Load More button
-  const themeColor = category === 'manga' ? 'red' : category === 'movie' ? 'cyan' : category === 'show' ? 'purple' : 'emerald';
+  const themeColor =
+    category === "manga"
+      ? "red"
+      : category === "movie"
+        ? "cyan"
+        : category === "show"
+          ? "purple"
+          : "emerald";
 
   useEffect(() => {
     if (!endpoint) return;
@@ -27,16 +34,20 @@ export default function ViewAll() {
       try {
         if (page === 1) setIsLoading(true);
         else setIsLoadingMore(true);
-        
+
         // 1. URL Engine: Safely injects pagination parameters based on the API type
         const url = new URL(endpoint);
 
-        if (category === "manga" || category === "movie" || category === "show") {
+        if (
+          category === "manga" ||
+          category === "movie" ||
+          category === "show"
+        ) {
           url.searchParams.set("page", page);
         } else if (category === "book") {
           if (endpoint.includes("nytimes")) {
             // NYT lists are strictly 15 items long. No pages exist!
-            setHasMore(false); 
+            setHasMore(false);
           } else if (endpoint.includes("googleapis")) {
             // Google Books uses "startIndex", moving forward 40 books at a time
             url.searchParams.set("startIndex", (page - 1) * 40);
@@ -71,40 +82,77 @@ export default function ViewAll() {
           formattedData = (data.data || []).map((item) => ({
             id: item.mal_id,
             title: item.title,
-            imageUrl: item.images?.webp?.image_url || item.images?.jpg?.image_url || null,
+            imageUrl:
+              item.images?.webp?.image_url ||
+              item.images?.jpg?.image_url ||
+              null,
           }));
           moreAvailable = data.pagination?.has_next_page || false;
-
         } else if (category === "book") {
-          if (endpoint.includes('nytimes')) {
+          if (endpoint.includes("nytimes")) {
             formattedData = (data.results?.books || []).map((book) => ({
               id: book.primary_isbn13 || book.primary_isbn10,
               title: book.title,
               imageUrl: book.book_image || null,
             }));
-            moreAvailable = false; // Hide the button for NYT
+            moreAvailable = false;
           } else {
-            formattedData = (data.items || []).map((book) => {
-              let cover = book.volumeInfo?.imageLinks?.thumbnail || null;
-              if (cover) cover = cover.replace('http:', 'https:').replace('&edge=curl', '').replace('zoom=1', 'zoom=3');
-              return {
-                id: book.id,
-                title: book.volumeInfo?.title || 'Unknown Title',
-                imageUrl: cover,
-              };
-            });
-            // If Google returns a full 40 books, there is likely a next page
-            moreAvailable = formattedData.length === 40; 
-          }
+            // Google Books data (View All version)
+            const seenTitles = new Set();
+            const seenAuthors = new Set();
+            formattedData = [];
 
+            (data.items || []).forEach((book) => {
+              let title = book.volumeInfo?.title || "Unknown Title";
+              let normalizedTitle = title.toLowerCase().trim();
+
+              let authors = book.volumeInfo?.authors || [];
+              let primaryAuthor =
+                authors.length > 0
+                  ? authors[0].toLowerCase().trim()
+                  : "unknown";
+
+              let cover = book.volumeInfo?.imageLinks?.thumbnail || null;
+
+              const isJunk =
+                normalizedTitle.includes("summary") ||
+                normalizedTitle.includes("study guide") ||
+                normalizedTitle.includes("analysis") ||
+                normalizedTitle.includes("cliffsnotes") ||
+                normalizedTitle.includes("reference");
+
+              if (
+                cover &&
+                !seenTitles.has(normalizedTitle) &&
+                !seenAuthors.has(primaryAuthor) &&
+                !isJunk
+              ) {
+                cover = cover
+                  .replace("http:", "https:")
+                  .replace("&edge=curl", "");
+
+                formattedData.push({
+                  id: book.id,
+                  title: title,
+                  imageUrl: cover,
+                });
+                seenTitles.add(normalizedTitle);
+                seenAuthors.add(primaryAuthor);
+              }
+            });
+
+            moreAvailable = data.items && data.items.length > 0;
+          }
         } else {
           formattedData = (data.results || []).map((item) => ({
             id: item.id,
-            title: item.title || item.name, 
-            imageUrl: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
+            title: item.title || item.name,
+            imageUrl: item.poster_path
+              ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+              : null,
           }));
           // TMDB tells us exactly how many pages exist!
-          moreAvailable = data.page < data.total_pages; 
+          moreAvailable = data.page < data.total_pages;
         }
 
         // 5. Append new items to the grid (and block duplicates!)
@@ -113,13 +161,15 @@ export default function ViewAll() {
         } else {
           setItems(prev => {
             const existingIds = new Set(prev.map(item => item.id));
-            const newItems = formattedData.filter(item => !existingIds.has(item.id));
+            const existingTitles = new Set(prev.map(item => item.title.toLowerCase().trim()));
+            const newItems = formattedData.filter(item => 
+              !existingIds.has(item.id) && !existingTitles.has(item.title.toLowerCase().trim())
+            );
             return [...prev, ...newItems];
           });
         }
 
         setHasMore(moreAvailable);
-
       } catch (error) {
         console.error("Error fetching view all:", error);
       } finally {
@@ -147,7 +197,6 @@ export default function ViewAll() {
 
   return (
     <main className="max-w-[1600px] mx-auto px-4 sm:px-8 md:px-12 w-full mt-8 pb-20">
-      
       <div className="flex items-center gap-4 mb-8 border-b border-zinc-800 pb-4">
         <button
           onClick={() => navigate(-1)}
@@ -182,11 +231,11 @@ export default function ViewAll() {
           {hasMore && (
             <div className="flex justify-center mt-12 mb-8">
               <button
-                onClick={() => setPage(prev => prev + 1)}
+                onClick={() => setPage((prev) => prev + 1)}
                 disabled={isLoadingMore}
                 className={`px-8 py-3 rounded-lg font-bold text-white transition-all shadow-lg ${
-                  isLoadingMore 
-                    ? "bg-zinc-800 text-zinc-500 cursor-wait border border-zinc-700" 
+                  isLoadingMore
+                    ? "bg-zinc-800 text-zinc-500 cursor-wait border border-zinc-700"
                     : `bg-${themeColor}-600 hover:bg-${themeColor}-500 hover:scale-105`
                 }`}
               >
