@@ -208,34 +208,55 @@ export default function DiscoverShows() {
             title="Trending This Week"
             items={trending}
             category="show"
+            endpoint="https://api.themoviedb.org/3/trending/tv/week?language=en-US"
           />
           <MediaRow
             title="Critically Acclaimed"
             items={acclaimed}
             category="show"
+            endpoint="https://api.themoviedb.org/3/discover/tv?language=en-US&sort_by=vote_average.desc&vote_count.gte=1000"
           />
-          <MediaRow title="Action & Adventure" items={action} category="show" />
-          <MediaRow title="Sci-Fi & Fantasy" items={sciFi} category="show" />
-          <MediaRow title="Gripping Dramas" items={drama} category="show" />
+          <MediaRow 
+            title="Action & Adventure" 
+            items={action} 
+            category="show" 
+            endpoint="https://api.themoviedb.org/3/discover/tv?language=en-US&with_genres=10759&without_genres=16" 
+          />
+          <MediaRow 
+            title="Sci-Fi & Fantasy" 
+            items={sciFi} 
+            category="show" 
+            endpoint="https://api.themoviedb.org/3/discover/tv?language=en-US&with_genres=10765&without_genres=16" 
+          />
+          <MediaRow 
+            title="Gripping Dramas" 
+            items={drama} 
+            category="show" 
+            endpoint="https://api.themoviedb.org/3/discover/tv?language=en-US&with_genres=18&without_genres=16" 
+          />
           <MediaRow
             title="Trending Anime"
             items={trendingAnime}
             category="show"
+            endpoint="https://api.themoviedb.org/3/discover/tv?language=en-US&with_genres=16&with_original_language=ja&sort_by=popularity.desc"
           />
           <MediaRow
             title="All-Time Highest Rated Animated"
             items={topAnimated}
             category="show"
+            endpoint="https://api.themoviedb.org/3/discover/tv?language=en-US&with_genres=16&sort_by=vote_average.desc&vote_count.gte=500"
           />
           <MediaRow
             title="K-Dramas & Asian Sensations"
             items={koreanDramas}
             category="show"
+            endpoint="https://api.themoviedb.org/3/discover/tv?language=en-US&with_original_language=ko&sort_by=popularity.desc"
           />
           <MediaRow
             title="All-Time Top Rated"
             items={topRated}
             category="show"
+            endpoint="https://api.themoviedb.org/3/tv/top_rated?language=en-US&page=1"
           />
         </div>
       )}

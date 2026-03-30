@@ -3,51 +3,75 @@ import MediaRow from './MediaRow';
 import DiscoverCard from './DiscoverCard';
 
 export default function DiscoverBooks() {
-  // Dashboard rows for book discovery
-  const [fiction, setFiction] = useState([]);
-  const [fantasy, setFantasy] = useState([]);
-  const [sciFi, setSciFi] = useState([]);
-  const [selfHelp, setSelfHelp] = useState([]);
-  const [tech, setTech] = useState([]);
+  // NYT State
+  const [currentHits, setCurrentHits] = useState([]);
+  const [manga, setManga] = useState([]);
+  
+  // Google Curated State
+  const [allTimeClassics, setAllTimeClassics] = useState([]);
+  const [modernEpics, setModernEpics] = useState([]);
+  const [sciFiLegends, setSciFiLegends] = useState([]);
 
-  // Search + loading state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Normalize Google Books payload for shared card UI
-  const formatData = (items) => {
+  const NYT_KEY = import.meta.env.VITE_NYT_API_KEY;
+
+  // NYT Formatter (Beautiful Covers)
+  const formatNYTData = (books) => {
+    if (!books) return [];
+    return books.map(book => ({
+      id: book.primary_isbn13 || book.primary_isbn10, 
+      title: book.title,
+      imageUrl: book.book_image || null, 
+    }));
+  };
+
+  // Google Formatter (With our custom High-Res Cover Hack!)
+  const formatGoogleData = (items) => {
     if (!items) return [];
     return items.map(book => {
       let cover = book.volumeInfo?.imageLinks?.thumbnail || null;
-      if (cover) cover = cover.replace('http:', 'https:'); // Avoid mixed-content image blocking
-
+      if (cover) {
+        cover = cover.replace('http:', 'https:'); 
+        cover = cover.replace('&edge=curl', ''); // Kills the ugly page curl
+        cover = cover.replace('zoom=1', 'zoom=3'); // Forces higher resolution!
+      }
       return {
         id: book.id,
         title: book.volumeInfo?.title || 'Unknown Title',
         imageUrl: cover,
       };
-    });
+    }).filter(book => book.imageUrl); // Drops books without covers
   };
 
   useEffect(() => {
     const fetchDashboards = async () => {
       try {
-        // Load all dashboard sections in parallel
-        const [fictionRes, fantasyRes, sciFiRes, selfHelpRes, techRes] = await Promise.all([
-          fetch('https://www.googleapis.com/books/v1/volumes?q=subject:fiction&orderBy=relevance&maxResults=15'),
-          fetch('https://www.googleapis.com/books/v1/volumes?q=subject:fantasy&orderBy=relevance&maxResults=15'),
-          fetch('https://www.googleapis.com/books/v1/volumes?q=subject:"science fiction"&orderBy=relevance&maxResults=15'),
-          fetch('https://www.googleapis.com/books/v1/volumes?q=subject:"self-help"&orderBy=relevance&maxResults=15'),
-          fetch('https://www.googleapis.com/books/v1/volumes?q=subject:technology&orderBy=relevance&maxResults=15')
+        const nytCurrentReq = fetch(`https://api.nytimes.com/svc/books/v3/lists/current/hardcover-fiction.json?api-key=${NYT_KEY}`);
+        const nytMangaReq = fetch(`https://api.nytimes.com/svc/books/v3/lists/current/graphic-books-and-manga.json?api-key=${NYT_KEY}`);
+
+        // Using strict 'intitle' queries ensures we get the EXACT books we want!
+        const classicsQuery = 'intitle:"To Kill a Mockingbird"+OR+intitle:"1984"+OR+intitle:"The Great Gatsby"+OR+intitle:"Pride and Prejudice"+OR+intitle:"Fahrenheit 451"';
+        const epicsQuery = 'intitle:"Harry Potter"+OR+intitle:"The Hunger Games"+OR+intitle:"Percy Jackson"+OR+intitle:"The Maze Runner"+OR+intitle:"Twilight"';
+        const scifiQuery = 'intitle:"Dune"+OR+intitle:"The Lord of the Rings"+OR+intitle:"A Game of Thrones"+OR+intitle:"The Martian"+OR+intitle:"Project Hail Mary"';
+
+        const classicsReq = fetch(`https://www.googleapis.com/books/v1/volumes?q=${classicsQuery}&printType=books&maxResults=15`);
+        const epicsReq = fetch(`https://www.googleapis.com/books/v1/volumes?q=${epicsQuery}&printType=books&maxResults=15`);
+        const scifiReq = fetch(`https://www.googleapis.com/books/v1/volumes?q=${scifiQuery}&printType=books&maxResults=15`);
+
+        const [currentRes, mangaRes, classicsRes, epicsRes, scifiRes] = await Promise.all([
+          nytCurrentReq, nytMangaReq, classicsReq, epicsReq, scifiReq
         ]);
 
-        setFiction(formatData((await fictionRes.json()).items));
-        setFantasy(formatData((await fantasyRes.json()).items));
-        setSciFi(formatData((await sciFiRes.json()).items));
-        setSelfHelp(formatData((await selfHelpRes.json()).items));
-        setTech(formatData((await techRes.json()).items));
+        setCurrentHits(formatNYTData((await currentRes.json()).results?.books));
+        setManga(formatNYTData((await mangaRes.json()).results?.books));
+        setAllTimeClassics(formatGoogleData((await classicsRes.json()).items));
+        setModernEpics(formatGoogleData((await epicsRes.json()).items));
+        setSciFiLegends(formatGoogleData((await scifiRes.json()).items));
+
       } catch (error) {
         console.error("Error fetching book dashboards:", error);
       } finally {
@@ -55,22 +79,18 @@ export default function DiscoverBooks() {
       }
     };
 
-    fetchDashboards();
-  }, []);
+    if (NYT_KEY) fetchDashboards();
+  }, [NYT_KEY]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    // Empty query exits search mode and shows dashboard rows
-    if (!searchQuery.trim()) {
-      setIsSearching(false);
-      return;
-    }
+    if (!searchQuery.trim()) { setIsSearching(false); return; }
 
     setLoading(true);
     try {
-      const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=40`);
+      const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&printType=books&maxResults=30`);
       const data = await response.json();
-      setSearchResults(formatData(data.items));
+      setSearchResults(formatGoogleData(data.items));
       setIsSearching(true);
     } catch (error) {
       console.error("Error searching books:", error);
@@ -98,7 +118,7 @@ export default function DiscoverBooks() {
       <form onSubmit={handleSearch} className="mb-10 max-w-2xl mx-auto flex gap-2">
         <input
           type="text"
-          placeholder="Search for a book or author..."
+          placeholder="Search for any book or author..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-700 text-white focus:outline-none focus:border-emerald-500 transition-colors shadow-lg"
@@ -124,11 +144,11 @@ export default function DiscoverBooks() {
         </div>
       ) : (
         <div className="flex flex-col gap-2 mt-4">
-          <MediaRow title="Bestselling Fiction" items={fiction} category="book" />
-          <MediaRow title="Epic Fantasy" items={fantasy} category="book" />
-          <MediaRow title="Sci-Fi Masterpieces" items={sciFi} category="book" />
-          <MediaRow title="Self-Help & Productivity" items={selfHelp} category="book" />
-          <MediaRow title="Tech & Business" items={tech} category="book" />
+          <MediaRow title="Current NYT Bestsellers" items={currentHits} category="book" endpoint={`https://api.nytimes.com/svc/books/v3/lists/current/hardcover-fiction.json?api-key=${NYT_KEY}`} />
+          <MediaRow title="Graphic Books & Manga" items={manga} category="book" endpoint={`https://api.nytimes.com/svc/books/v3/lists/current/graphic-books-and-manga.json?api-key=${NYT_KEY}`} />
+          <MediaRow title="All-Time Classics" items={allTimeClassics} category="book" endpoint={`https://www.googleapis.com/books/v1/volumes?q=intitle:"To Kill a Mockingbird"+OR+intitle:"1984"+OR+intitle:"The Great Gatsby"+OR+intitle:"Pride and Prejudice"+OR+intitle:"Fahrenheit 451"&printType=books&maxResults=40`} />
+          <MediaRow title="Modern Epics & YA" items={modernEpics} category="book" endpoint={`https://www.googleapis.com/books/v1/volumes?q=intitle:"Harry Potter"+OR+intitle:"The Hunger Games"+OR+intitle:"Percy Jackson"+OR+intitle:"The Maze Runner"+OR+intitle:"Twilight"&printType=books&maxResults=40`} />
+          <MediaRow title="Sci-Fi & Fantasy Legends" items={sciFiLegends} category="book" endpoint={`https://www.googleapis.com/books/v1/volumes?q=intitle:"Dune"+OR+intitle:"The Lord of the Rings"+OR+intitle:"A Game of Thrones"+OR+intitle:"The Martian"+OR+intitle:"Project Hail Mary"&printType=books&maxResults=40`} />
         </div>
       )}
     </div>

@@ -2,18 +2,23 @@ import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 
 export default function Account() {
+  // Auth state
   const [session, setSession] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // Form + auth feedback
   const [loading, setLoading] = useState(false);
   const [authMessage, setAuthMessage] = useState({ type: "", text: "" });
+
+  // Export-related state
   const [exportLoading, setExportLoading] = useState(false);
   const [exportError, setExportError] = useState("");
 
-  // New state to hold data specifically for the Visual Print layout
+  // Print data: populated when generating visual PDF, cleared after print
   const [printData, setPrintData] = useState(null);
 
+  // Export filter toggles
   const [exportCategories, setExportCategories] = useState({
     manga: true,
     movies: true,
@@ -21,6 +26,7 @@ export default function Account() {
     books: true,
   });
 
+  // Export column toggles for what fields to include
   const [exportColumns, setExportColumns] = useState({
     title: true,
     type: true,
@@ -39,7 +45,8 @@ export default function Account() {
       setSession(session),
     );
 
-    // Cleanup the print layout when the print dialog closes
+    // Cleanup: clear print data when print dialog closes
+    // This ensures print layout doesn't persist in the DOM
     const handleAfterPrint = () => setPrintData(null);
     window.addEventListener("afterprint", handleAfterPrint);
 
@@ -51,20 +58,24 @@ export default function Account() {
 
   const handleAuth = async (e, type) => {
     e.preventDefault();
+    // Reset state for fresh attempt
     setLoading(true);
     setAuthMessage({ type: "", text: "" });
 
     try {
+      // Sign up or sign in based on type param
       let error;
       if (type === "signup") {
         const res = await supabase.auth.signUp({ email, password });
         error = res.error;
+        // Sign up success shows email verification message
         if (!error)
           setAuthMessage({
             type: "success",
             text: "Check your email for the confirmation link!",
           });
       } else {
+        // Direct sign in for existing users
         const res = await supabase.auth.signInWithPassword({ email, password });
         error = res.error;
       }
@@ -76,14 +87,17 @@ export default function Account() {
     }
   };
 
+  // Quick sign out
   const handleSignOut = async () => await supabase.auth.signOut();
 
+  // Toggle helpers for export filters
   const toggleCategory = (cat) =>
     setExportCategories((prev) => ({ ...prev, [cat]: !prev[cat] }));
   const toggleColumn = (col) =>
     setExportColumns((prev) => ({ ...prev, [col]: !prev[col] }));
 
   const handleExport = async (format) => {
+    // Guard: require at least one column selected
     setExportLoading(true);
     setExportError("");
 
@@ -95,6 +109,7 @@ export default function Account() {
       setExportLoading(false);
       return;
     }
+    // Collect data from all selected categories
 
     let allData = [];
 
@@ -103,11 +118,12 @@ export default function Account() {
         .from(tableName)
         .select("*")
         .eq("user_id", session.user.id);
+      // Fetch only this user's data
       if (error) return [];
 
       return data.map((item) => {
         let formattedItem = {};
-        // We always keep the image and raw data for the Visual Print
+        // Keep original image URL for visual PDF rendering
         formattedItem._rawImage = item.imageUrl || item.image_url;
 
         if (exportColumns.title) formattedItem.Title = item.title;
@@ -131,6 +147,7 @@ export default function Account() {
       });
     };
 
+    // Fetch from selected categories in parallel
     if (exportCategories.manga)
       allData = [
         ...allData,
@@ -153,15 +170,16 @@ export default function Account() {
       ];
 
     if (allData.length === 0) {
+      // Guard: prevent export with no data
       setExportError("No data found for the selected categories.");
       setExportLoading(false);
       return;
     }
 
-    // --- VISUAL PDF (BROWSER ENGINE) ---
+    // Route 1: Visual PDF uses native browser print engine
     if (format === "visual") {
       setPrintData(allData);
-      // Give the DOM 800ms to render the images before triggering the print dialog
+      // Wait for images to load in DOM before opening print dialog
       setTimeout(() => {
         window.print();
         setExportLoading(false);
@@ -169,15 +187,18 @@ export default function Account() {
       return;
     }
 
-    // Strip out the internal _rawImage property for clean CSV/JSON/Data PDFs
+    // Routes 2-4: Remove internal print data, export as JSON/CSV/PDF
     const cleanData = allData.map(({ _rawImage, ...rest }) => rest);
 
     if (format === "json") {
+      // JSON format: structured full data
       const blob = new Blob([JSON.stringify(cleanData, null, 2)], {
         type: "application/json",
       });
       triggerDownload(blob, "my_media_tracker.json");
     } else if (format === "csv") {
+      // CSV format: spreadsheet-ready
+      // Build CSV with quoted fields for safe parsing
       const headers = Object.keys(cleanData[0]);
       const csvRows = [
         headers.join(","),
@@ -196,6 +217,7 @@ export default function Account() {
       const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
       triggerDownload(blob, "my_media_tracker.csv");
     } else if (format === "pdf") {
+      // jsPDF table layout for structured PDF export
       const doc = new jsPDF();
       doc.setFontSize(18);
       doc.setTextColor(40, 40, 40);
@@ -222,6 +244,7 @@ export default function Account() {
     setExportLoading(false);
   };
 
+  // Trigger browser download for blob data
   const triggerDownload = (blob, filename) => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -233,16 +256,18 @@ export default function Account() {
     window.URL.revokeObjectURL(url);
   };
 
+  // Logged-out UI: sign in/up form
+  // Show logged-out auth form
   if (!session) {
     return (
       <main className="max-w-md mx-auto px-6 mt-10 sm:mt-20">
-        {/* ... (Keep your existing logged-out UI exactly the same) ... */}
         <div className="bg-zinc-900 border border-zinc-800 p-6 sm:p-8 rounded-xl shadow-2xl">
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6 text-center">
             Welcome Back
           </h2>
           {authMessage.text && (
             <div
+              // Show success or error feedback inline
               className={`p-3 mb-4 rounded text-sm ${authMessage.type === "error" ? "bg-red-900/50 text-red-200 border border-red-800" : "bg-emerald-900/50 text-emerald-200 border border-emerald-800"}`}
             >
               {authMessage.text}
@@ -299,10 +324,10 @@ export default function Account() {
 
   return (
     <>
-      {/* This is your normal Account UI. 
-        Notice the `print:hidden` class! It completely vanishes when the print dialog opens.
-      */}
+      {/* Logged-in UI: dashboard + export controls
+       Hidden during print (`print:hidden`) */}
       <main className="max-w-2xl mx-auto px-4 sm:px-6 mt-8 sm:mt-12 mb-20 print:hidden">
+        {/* User info card */}
         <div className="bg-zinc-900 border border-zinc-800 p-6 sm:p-8 rounded-xl shadow-lg flex flex-col items-center mb-8">
           <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mb-4">
             <span className="text-2xl">👤</span>
@@ -316,12 +341,14 @@ export default function Account() {
           </p>
           <button
             onClick={handleSignOut}
+            // Sign out + clear session
             className="w-full sm:w-auto px-8 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg transition"
           >
             Sign Out
           </button>
         </div>
 
+        {/* Export controls + format selection */}
         <div className="bg-zinc-900 border border-zinc-800 p-6 sm:p-8 rounded-xl shadow-lg">
           <h2 className="text-lg sm:text-xl font-bold text-white mb-2 border-b border-zinc-800 pb-4">
             📥 Export Your Data
@@ -336,6 +363,7 @@ export default function Account() {
             </div>
           )}
 
+          {/* Category + column toggles */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
             <div>
               <h3 className="text-zinc-200 font-semibold mb-3 text-sm tracking-wide uppercase">
@@ -386,6 +414,7 @@ export default function Account() {
             </div>
           </div>
 
+          {/* Export format buttons */}
           <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-zinc-800">
             <button
               onClick={() => handleExport("visual")}
@@ -406,16 +435,16 @@ export default function Account() {
         </div>
       </main>
 
-      {/* --- THE SECRET PRINT UI ---
-        This is normally hidden. It ONLY appears when `printData` is loaded, 
-        and the CSS `print:block` forces the browser to render it into the PDF!
+      {/* Print layout: only shows when printing
+       Normal display is `hidden`, but `print:block` clause makes it visible
+       in browser print preview / PDF save
       */}
       {printData && (
         <div className="hidden print:block w-full bg-white text-black p-4 sm:p-8 font-sans">
-          {/* Professional Report Header */}
+          {/* Professional print header with metadata */}
           <div className="flex justify-between items-end border-b-2 border-red-600 pb-4 mb-8">
             <div>
-              {/* Dynamic Name Header! Defaults to your name if Supabase metadata is empty */}
+              {/* User name header (falls back if metadata unavailable) */}
               <h1 className="text-3xl font-black text-red-600 tracking-tight uppercase">
                 {session?.user?.user_metadata?.full_name || "Bilal Ahmad"}'s
                 Collection
@@ -430,14 +459,15 @@ export default function Account() {
             </div>
           </div>
 
-          {/* Sleek 2-Column List Layout */}
+          {/* 2-column grid for print layout */}
           <div className="grid grid-cols-2 gap-x-8 gap-y-6">
             {printData.map((item, idx) => (
               <div
                 key={idx}
+                // Avoid page breaks within items for cleaner print
                 className="break-inside-avoid flex items-center gap-4 border-b border-gray-200 pb-4"
               >
-                {/* Thumbnail */}
+                {/* Thumbnail from original source */}
                 {item._rawImage ? (
                   <img
                     src={item._rawImage}
@@ -450,7 +480,7 @@ export default function Account() {
                   </div>
                 )}
 
-                {/* Text Details */}
+                {/* Media details based on selected export columns */}
                 <div className="flex flex-col flex-grow">
                   {exportColumns.title && (
                     <h3 className="font-bold text-gray-900 text-base leading-tight mb-1">
@@ -489,7 +519,7 @@ export default function Account() {
             ))}
           </div>
 
-          {/* --- NEW: Subtle Developer Footer --- */}
+          {/* Subtle print footer */}
           <div className="mt-16 pt-4 border-t border-gray-200 flex flex-col items-center text-[10px] text-gray-400 font-medium">
             <p>
               Generated via{" "}
@@ -497,7 +527,6 @@ export default function Account() {
                 My Media Tracker
               </span>
             </p>
-            {/* Swap the href link for your actual portfolio, GitHub, or live domain! */}
             <a
               href="https://media-tracker-rust.vercel.app"
               target="_blank"

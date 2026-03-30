@@ -193,32 +193,43 @@ export default function DiscoverMovies() {
             title="Trending This Week"
             items={trending}
             category="movie"
+            endpoint="https://api.themoviedb.org/3/trending/movie/week?language=en-US"
           />
           <MediaRow
             title="Critically Acclaimed"
             items={acclaimed}
             category="movie"
+            endpoint="https://api.themoviedb.org/3/discover/movie?language=en-US&primary_release_year=2023&sort_by=vote_average.desc&vote_count.gte=1500"
           />
           <MediaRow
             title="Action Blockbusters"
             items={action}
             category="movie"
+            endpoint="https://api.themoviedb.org/3/discover/movie?language=en-US&with_genres=28"
           />
           <MediaRow
             title="Animated Features"
             items={animated}
             category="movie"
+            endpoint="https://api.themoviedb.org/3/discover/movie?language=en-US&with_genres=16"
           />
           <MediaRow
             title="Nail-Biting Thrillers"
             items={thriller}
             category="movie"
+            endpoint="https://api.themoviedb.org/3/discover/movie?language=en-US&with_genres=53"
           />
-          <MediaRow title="Romance & Drama" items={romance} category="movie" />
+          <MediaRow 
+            title="Romance & Drama" 
+            items={romance} 
+            category="movie" 
+            endpoint="https://api.themoviedb.org/3/discover/movie?language=en-US&with_genres=10749"
+          />
           <MediaRow
             title="All-Time Top Rated"
             items={topRated}
             category="movie"
+            endpoint="https://api.themoviedb.org/3/movie/top_rated?language=en-US&page=1"
           />
         </div>
       )}

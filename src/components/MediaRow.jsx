@@ -7,7 +7,6 @@ export default function MediaRow({
   items = [],
   category = "manga",
 }) {
-  // Skip rendering empty rows
   if (!items || items.length === 0) return null;
 
   return (
@@ -18,9 +17,8 @@ export default function MediaRow({
         </h2>
         {endpoint && (
           <Link
-            // Build a readable slug for the view-all route
             to={`/view/${title.toLowerCase().replace(/\s+/g, "-")}`}
-            state={{ title: title, endpoint: endpoint }}
+            state={{ title: title, endpoint: endpoint, category: category }}
             className="text-xs font-semibold text-zinc-500 hover:text-cyan-400 transition"
           >
             View All
