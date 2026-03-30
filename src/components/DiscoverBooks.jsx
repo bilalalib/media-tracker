@@ -3,22 +3,20 @@ import MediaRow from './MediaRow';
 import DiscoverCard from './DiscoverCard';
 
 export default function DiscoverBooks() {
-  // NYT State (Bestsellers)
   const [nytHits, setNytHits] = useState([]);
-  
-  // Google State (Dynamic Genres)
   const [classics, setClassics] = useState([]);
   const [fantasy, setFantasy] = useState([]);
   const [sciFi, setSciFi] = useState([]);
   const [thriller, setThriller] = useState([]);
 
-  // Search + loading state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Grab both API keys from your .env.local file
   const NYT_KEY = import.meta.env.VITE_NYT_API_KEY;
+  const GOOGLE_KEY = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
 
   const formatNYTData = (books) => {
     if (!books) return [];
@@ -29,7 +27,6 @@ export default function DiscoverBooks() {
     }));
   };
 
-  // The Dynamic Genre Formatter (Strict Author Filter for Dashboard Diversity)
   const formatGoogleDashboard = (items) => {
     if (!items) return [];
     const uniqueBooks = [];
@@ -43,7 +40,6 @@ export default function DiscoverBooks() {
       let primaryAuthor = authors.length > 0 ? authors[0].toLowerCase().trim() : 'unknown';
       let cover = book.volumeInfo?.imageLinks?.thumbnail || null;
 
-      // Kills study guides, summaries, and weird reference manuals
       const isJunk = normalizedTitle.includes("summary") || 
                      normalizedTitle.includes("study guide") || 
                      normalizedTitle.includes("analysis") ||
@@ -51,17 +47,19 @@ export default function DiscoverBooks() {
                      normalizedTitle.includes("reference") ||
                      normalizedTitle.includes("review");
 
-      if (cover && !seenTitles.has(normalizedTitle) && !seenAuthors.has(primaryAuthor) && !isJunk) {
+      const isDuplicateAuthor = primaryAuthor !== 'unknown' && seenAuthors.has(primaryAuthor);
+
+      if (cover && !seenTitles.has(normalizedTitle) && !isDuplicateAuthor && !isJunk) {
         cover = cover.replace('http:', 'https:').replace('&edge=curl', ''); 
         uniqueBooks.push({ id: book.id, title: title, imageUrl: cover });
+        
         seenTitles.add(normalizedTitle); 
-        seenAuthors.add(primaryAuthor);
+        if (primaryAuthor !== 'unknown') seenAuthors.add(primaryAuthor);
       }
     });
     return uniqueBooks;
   };
 
-  // Search Formatter (Allows multiple books by the same author!)
   const formatSearchData = (items) => {
     if (!items) return [];
     const uniqueBooks = [];
@@ -87,40 +85,67 @@ export default function DiscoverBooks() {
   };
 
   useEffect(() => {
+    let isMounted = true; 
+
     const fetchDashboards = async () => {
       try {
-        // 1. Fetch NYT Current Hits (Optional, won't break if key is missing)
-        let nytData = [];
+        // 1. Fetch NYT Bestsellers first and display them instantly
         if (NYT_KEY) {
-          const res = await fetch(`https://api.nytimes.com/svc/books/v3/lists/current/hardcover-fiction.json?api-key=${NYT_KEY}`);
-          if (res.ok) nytData = formatNYTData((await res.json()).results?.books);
+          try {
+            const res = await fetch(`https://api.nytimes.com/svc/books/v3/lists/current/hardcover-fiction.json?api-key=${NYT_KEY}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (isMounted) setNytHits(formatNYTData(data.results?.books));
+            }
+          } catch (err) { console.error("NYT Fetch failed", err); }
         }
 
-        // 2. Dynamic Subject Queries (Just like TMDB Genres! Allows infinite pagination)
-        const baseGoogleUrl = 'https://www.googleapis.com/books/v1/volumes?printType=books&langRestrict=en&orderBy=relevance&maxResults=40&q=';
-        
-        const [classicsRes, fantasyRes, sciFiRes, thrillerRes] = await Promise.all([
-          fetch(`${baseGoogleUrl}subject:"classic literature"`),
-          fetch(`${baseGoogleUrl}subject:"fantasy"`),
-          fetch(`${baseGoogleUrl}subject:"science fiction"`),
-          fetch(`${baseGoogleUrl}subject:"thriller"`)
+        if (isMounted) setLoading(false);
+
+        // 2. Fetch Google Books Lightning Fast (No more artificial pauses!)
+        const fetchGoogleSafe = async (query) => {
+          try {
+            const safeQuery = encodeURIComponent(query);
+            // Inject the API key if it exists, otherwise fall back to anonymous request
+            const keyParam = GOOGLE_KEY ? `&key=${GOOGLE_KEY}` : '';
+            const res = await fetch(`https://www.googleapis.com/books/v1/volumes?printType=books&langRestrict=en&orderBy=relevance&maxResults=40&q=${safeQuery}${keyParam}`);
+            
+            if (!res.ok) {
+               console.error(`Google API blocked query [${query}] with status: ${res.status}`);
+               return []; 
+            }
+            const data = await res.json();
+            return data.items || [];
+          } catch (err) {
+            console.error("Fetch Crash on Google API:", err);
+            return [];
+          }
+        };
+
+        // Because you have a key, we can fire these all off at the exact same time using Promise.all!
+        const [classicsData, fantasyData, sciFiData, thrillerData] = await Promise.all([
+          fetchGoogleSafe('subject:classics'),
+          fetchGoogleSafe('subject:fantasy'),
+          fetchGoogleSafe('subject:science_fiction'),
+          fetchGoogleSafe('subject:thriller')
         ]);
 
-        setNytHits(nytData);
-        setClassics(formatGoogleDashboard((await classicsRes.json()).items));
-        setFantasy(formatGoogleDashboard((await fantasyRes.json()).items));
-        setSciFi(formatGoogleDashboard((await sciFiRes.json()).items));
-        setThriller(formatGoogleDashboard((await thrillerRes.json()).items));
+        if (isMounted) {
+          setClassics(formatGoogleDashboard(classicsData));
+          setFantasy(formatGoogleDashboard(fantasyData));
+          setSciFi(formatGoogleDashboard(sciFiData));
+          setThriller(formatGoogleDashboard(thrillerData));
+        }
 
       } catch (error) {
-        console.error("Error fetching book dashboards:", error);
-      } finally {
-        setLoading(false);
+        console.error("Fatal Error fetching book dashboards:", error);
+        if (isMounted) setLoading(false); 
       }
     };
 
     fetchDashboards();
-  }, [NYT_KEY]);
+    return () => { isMounted = false; };
+  }, [NYT_KEY, GOOGLE_KEY]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -128,8 +153,15 @@ export default function DiscoverBooks() {
 
     setLoading(true);
     try {
-      const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&printType=books&maxResults=40`);
-      setSearchResults(formatSearchData((await response.json()).items));
+      const keyParam = GOOGLE_KEY ? `&key=${GOOGLE_KEY}` : '';
+      const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&printType=books&maxResults=40${keyParam}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(formatSearchData(data.items));
+      } else {
+        setSearchResults([]);
+      }
       setIsSearching(true);
     } catch (error) {
       console.error("Error searching books:", error);
@@ -151,6 +183,9 @@ export default function DiscoverBooks() {
       </div>
     );
   }
+
+  // Helper string to append API key to the "View All" endpoints
+  const keyEndpoint = GOOGLE_KEY ? `&key=${GOOGLE_KEY}` : '';
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 sm:px-8 md:px-12 w-full mt-8">
@@ -187,11 +222,10 @@ export default function DiscoverBooks() {
             <MediaRow title="Current NYT Bestsellers" items={nytHits} category="book" />
           )}
           
-          {/* THESE NOW SUPPORT INFINITE PAGINATION IN VIEW ALL! */}
-          <MediaRow title="Timeless Classics" items={classics} category="book" endpoint={`https://www.googleapis.com/books/v1/volumes?q=subject:"classic literature"&printType=books&langRestrict=en&orderBy=relevance&maxResults=40`} />
-          <MediaRow title="Epic Fantasy" items={fantasy} category="book" endpoint={`https://www.googleapis.com/books/v1/volumes?q=subject:"fantasy"&printType=books&langRestrict=en&orderBy=relevance&maxResults=40`} />
-          <MediaRow title="Sci-Fi Masterpieces" items={sciFi} category="book" endpoint={`https://www.googleapis.com/books/v1/volumes?q=subject:"science fiction"&printType=books&langRestrict=en&orderBy=relevance&maxResults=40`} />
-          <MediaRow title="Gripping Thrillers" items={thriller} category="book" endpoint={`https://www.googleapis.com/books/v1/volumes?q=subject:"thriller"&printType=books&langRestrict=en&orderBy=relevance&maxResults=40`} />
+          <MediaRow title="Timeless Classics" items={classics} category="book" endpoint={`https://www.googleapis.com/books/v1/volumes?q=subject:classics&printType=books&langRestrict=en&orderBy=relevance&maxResults=40${keyEndpoint}`} />
+          <MediaRow title="Epic Fantasy" items={fantasy} category="book" endpoint={`https://www.googleapis.com/books/v1/volumes?q=subject:fantasy&printType=books&langRestrict=en&orderBy=relevance&maxResults=40${keyEndpoint}`} />
+          <MediaRow title="Sci-Fi Masterpieces" items={sciFi} category="book" endpoint={`https://www.googleapis.com/books/v1/volumes?q=subject:science_fiction&printType=books&langRestrict=en&orderBy=relevance&maxResults=40${keyEndpoint}`} />
+          <MediaRow title="Gripping Thrillers" items={thriller} category="book" endpoint={`https://www.googleapis.com/books/v1/volumes?q=subject:thriller&printType=books&langRestrict=en&orderBy=relevance&maxResults=40${keyEndpoint}`} />
         </div>
       )}
     </div>
