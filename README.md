@@ -26,7 +26,7 @@ The "View All" routing opens a dedicated, responsive grid layout powered by an i
 * Actively filters duplicate entity IDs during sequential loads and intelligently disables pagination when the endpoint dataset is exhausted.
 
 ### ⚡ Real-Time State Synchronization
-Built leveraging custom JavaScript Event Listeners (`syncMediaState`), the application ensures immediate state propagation. Modifying the tracking status of an entity in one component instantly updates all matching DOM nodes across the application architecture without requiring component re-renders or additional network requests.
+Built leveraging custom JavaScript Event Listeners (syncMediaState), the application ensures immediate state propagation. Modifying the tracking status of an entity in one component instantly updates all matching DOM nodes across the application architecture without requiring component re-renders or additional network requests.
 
 ### 🗄️ Data Export & Portability
 Users maintain full ownership of their tracking databases via a robust export engine:
@@ -41,7 +41,6 @@ Users maintain full ownership of their tracking databases via a robust export en
 * **Frontend:** React (Vite), React Router v6, Tailwind CSS
 * **Backend & Authentication:** Supabase (PostgreSQL, Row Level Security)
 * **External APIs:** TMDB API, Jikan v4 API, NYT Books API, Google Books API
-* **Client-Side Libraries:** jsPDF
 
 ---
 
@@ -64,8 +63,9 @@ Create a `.env.local` file in the root directory and define the following enviro
 #### External APIs
     VITE_TMDB_READ_TOKEN=your_tmdb_read_access_token
     VITE_NYT_API_KEY=your_new_york_times_api_key
+    VITE_GOOGLE_BOOKS_API_KEY=your_google_books_api_key
 
-*(Note: The Google Books and Jikan APIs utilized in this project do not currently require authentication keys.)*
+*(Note: The Jikan API utilized in this project does not currently require authentication keys.)*
 
 ### 4. Initialize the development server
     npm run dev
